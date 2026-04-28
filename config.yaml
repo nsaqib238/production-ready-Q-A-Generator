@@ -1,0 +1,88 @@
+# Q&A Generator Configuration
+
+# LLM Configuration
+llm:
+  provider: "ollama"  # Currently only ollama is supported
+  base_url: "http://localhost:11434"  # Default Ollama URL
+  model: "qwen2.5:7b"  # Default model (options: qwen2.5:7b, llama3.1:8b, mistral:7b, deepseek-r1:7b)
+  timeout: 120  # Request timeout in seconds
+  temperature: 0.3  # Lower temperature for more consistent outputs
+  
+# Processing Configuration
+processing:
+  batch_size: 10  # Number of items to process in parallel
+  max_retries: 3  # Maximum retries for failed items
+  resume_enabled: true  # Enable resume from last checkpoint
+  checkpoint_interval: 5  # Save progress every N items
+  
+# Input Configuration
+input:
+  clauses_file: "data/clauses.csv"
+  tables_file: "data/tables.csv"
+  
+# Output Configuration
+output:
+  generated_qna: "output/generated_qna.jsonl"
+  rejected_qna: "output/rejected_qna.jsonl"
+  performance_summary: "output/model_performance_summary.json"
+  checkpoint_file: "output/.checkpoint.json"
+  
+# Question Types Configuration
+question_types:
+  - direct
+  - natural
+  - keyword_poor
+  - keyword_rich
+  - trap
+  
+# Discipline Keywords (for detection)
+discipline_keywords:
+  electrical:
+    - "voltage"
+    - "ampere"
+    - "circuit"
+    - "conductor"
+    - "wiring"
+    - "switchboard"
+    - "earthing"
+    - "electrical"
+    - "power"
+    - "current"
+  mechanical:
+    - "mechanical"
+    - "ventilation"
+    - "HVAC"
+    - "air conditioning"
+    - "duct"
+    - "fan"
+    - "exhaust"
+    - "refrigeration"
+  fire:
+    - "fire"
+    - "smoke"
+    - "sprinkler"
+    - "alarm"
+    - "emergency"
+    - "evacuation"
+    - "fire safety"
+    - "fire resistance"
+  hydraulic:
+    - "water"
+    - "plumbing"
+    - "drainage"
+    - "pipe"
+    - "hydraulic"
+    - "sanitary"
+    - "sewer"
+    - "fixture"
+  ncc:
+    - "NCC"
+    - "BCA"
+    - "Building Code of Australia"
+    - "Australian Standard AS"
+    - "AS/NZS"
+  sir:
+    - "SIR"
+    - "Victorian"
+    - "service rules"
+    - "Victoria"
