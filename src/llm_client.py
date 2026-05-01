@@ -35,8 +35,13 @@ class OllamaClient:
             "model": self.model,
             "prompt": prompt,
             "stream": False,
+            "keep_alive": self.config.get("llm.keep_alive", "30m"),
+            # Ask Ollama to enforce JSON output (supported by newer Ollama versions).
+            # If unsupported, Ollama will ignore it and still return text.
+            "format": "json",
             "options": {
-                "temperature": self.temperature
+                "temperature": self.temperature,
+                "num_predict": int(self.config.get("llm.num_predict", 800)),
             }
         }
         
@@ -47,7 +52,8 @@ class OllamaClient:
             response = requests.post(
                 url,
                 json=payload,
-                timeout=self.timeout
+                # Separate connect and read timeouts (read timeout is the long one)
+                timeout=(10, self.timeout)
             )
             response.raise_for_status()
             
@@ -56,6 +62,19 @@ class OllamaClient:
             
         except requests.exceptions.RequestException as e:
             raise Exception(f"Failed to call Ollama LLM: {str(e)}")
+
+    @staticmethod
+    def _extract_json_array(text: str) -> str:
+        """
+        Best-effort extraction of a JSON array from a model response.
+        Helps when the model adds extra text around the array.
+        """
+        s = text.strip()
+        start = s.find('[')
+        end = s.rfind(']')
+        if start == -1 or end == -1 or end <= start:
+            return s
+        return s[start:end + 1]
     
     def generate_qna(
         self,
@@ -85,8 +104,11 @@ Rules:
 - Do NOT invent values, limits, exceptions, or clause references.
 - Do NOT assume the discipline unless supported by text.
 - The expected answer must be directly supported by the provided text.
+- The expected answer must preserve key engineering context: subject, condition/scope, and requirement/value.
+- Prefer complete technical phrasing over shorthand fragments.
 - Citation snippet must be exact text from the source.
 - Trap questions must expose common misunderstandings but must not create false unsupported answers.
+- Keywords and missing_keywords must prioritize retrieval-critical technical phrases (including multi-word phrases), not only single tokens.
 
 Return ONLY a valid JSON array with no additional text or markdown formatting."""
         
@@ -105,9 +127,16 @@ For each question, provide:
 - discipline_detected: electrical | mechanical | fire | hydraulic | ncc | sir | unknown (based on text content only)
 - question_type: direct | natural | keyword_poor | keyword_rich | trap
 - question: the question text
-- expected_answer: answer supported by the source text
+- expected_answer: answer supported by the source text, including full engineering context
 - keywords: list of important keywords present in the question
-- missing_keywords: list of important keywords from source that are NOT in the question
+  * include at least 6 entries
+  * include at least 2 multi-word technical phrases where possible
+- missing_keywords: list of important retrieval-critical terms from source that are NOT in the question
+  * prioritize multi-word technical phrases
+  * include 3 to 8 entries
+- trap question requirements:
+  * must contain a plausible but incorrect assumption
+  * expected_answer must explicitly correct that assumption using source text only
 - citation_snippet: exact text from source that supports the answer
 - confidence: 0.0 to 1.0 (how confident you are the answer is fully supported)
 
@@ -137,6 +166,10 @@ OUTPUT JSON ARRAY (no markdown, no code blocks):
             if response.endswith('```'):
                 response = response[:-3]
             response = response.strip()
+
+            # If Ollama 'format: json' is honored, response may be a JSON object string.
+            # We still handle the original contract: a JSON array.
+            response = self._extract_json_array(response)
             
             # Parse JSON response
             qa_data = json.loads(response)

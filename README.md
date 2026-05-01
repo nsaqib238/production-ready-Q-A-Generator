@@ -34,6 +34,13 @@ This tool helps you evaluate how well an LLM can:
 # Install Ollama (on your local machine)
 curl -fsSL https://ollama.com/install.sh | sh
 
+
+
+ollama --version
+ollama run llama3.1
+
+
+
 # Pull a model (choose one)
 ollama pull qwen2.5:7b        # Recommended - good balance
 ollama pull llama3.1:8b       # Alternative

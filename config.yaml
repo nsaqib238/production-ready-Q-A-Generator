@@ -5,8 +5,9 @@ llm:
   provider: "ollama"  # Currently only ollama is supported
   base_url: "http://localhost:11434"  # Default Ollama URL
   model: "qwen2.5:7b"  # Default model (options: qwen2.5:7b, llama3.1:8b, mistral:7b, deepseek-r1:7b)
-  timeout: 120  # Request timeout in seconds
+  timeout: 600  # Request timeout in seconds (qwen2.5 can be slow on CPU)
   temperature: 0.3  # Lower temperature for more consistent outputs
+  num_predict: 2000  # Max tokens to generate (must fit full JSON array)
   
 # Processing Configuration
 processing:
